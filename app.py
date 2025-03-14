@@ -53,9 +53,14 @@ def generate_ai_response(prompt):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are a helpful assistant."},
-                  {"role": "user", "content": prompt}]
+              {"role": "user", "content": prompt}]
     )
     return response["choices"][0]["message"]["content"].strip()
+
+# Get the bot's user ID
+def get_bot_user_id():
+    response = client.auth_test()
+    return response["user_id"]
 
 # Process Slack events
 @app.route("/slack/events", methods=["POST"])
@@ -81,8 +86,11 @@ def slack_events():
             # Debugging: Print the user question and channel
             print(f"User question: {user_question}, Channel: {channel}")
             
-            # Check if the bot is tagged (mentions include the bot's name)
-            if f"<@{SLACK_BOT_TOKEN.split('-')[0]}>" in user_question:
+            # Check if the bot is tagged using the bot's user ID
+            bot_user_id = get_bot_user_id()  # Get the bot's user ID
+            
+            # Check if the message mentions the bot
+            if f"<@{bot_user_id}>" in user_question:
                 # If the bot is tagged, check for an answer in the database
                 stored_answer = get_answer(user_question)
                 
