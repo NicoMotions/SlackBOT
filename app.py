@@ -61,20 +61,34 @@ def generate_ai_response(prompt):
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
     data = request.json
+    
+    # Debugging: Print the received data
+    print("Received data:", data)
+    
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]})
     
     if "event" in data:
         event = data["event"]
+        
+        # Debugging: Print the event data
+        print("Event data:", event)
+        
         if event.get("type") == "message" and "bot_id" not in event:
             user_question = event.get("text", "").strip()
             channel = event.get("channel")
+            
+            # Debugging: Print the user question and channel
+            print(f"User question: {user_question}, Channel: {channel}")
             
             stored_answer = get_answer(user_question)
             if stored_answer:
                 response_text = stored_answer
             else:
                 response_text = generate_ai_response(user_question)
+            
+            # Debugging: Print the response text before sending it
+            print("Response text:", response_text)
             
             try:
                 client.chat_postMessage(channel=channel, text=response_text)
@@ -85,4 +99,3 @@ def slack_events():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
-
