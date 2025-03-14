@@ -74,21 +74,24 @@ def slack_events():
         # Debugging: Print the event data
         print("Event data:", event)
         
-        # Ensure bot responds only when tagged
         if event.get("type") == "message" and "bot_id" not in event:
             user_question = event.get("text", "").strip()
             channel = event.get("channel")
             
-            # Debugging: Print the user question
+            # Debugging: Print the user question and channel
             print(f"User question: {user_question}, Channel: {channel}")
             
             # Check if the bot is tagged (mentions include the bot's name)
             if f"<@{SLACK_BOT_TOKEN.split('-')[0]}>" in user_question:
+                # If the bot is tagged, check for an answer in the database
                 stored_answer = get_answer(user_question)
+                
                 if stored_answer:
                     response_text = stored_answer
                 else:
+                    # If no stored answer is found, generate a new AI response
                     response_text = generate_ai_response(user_question)
+                    # Store the new question-answer pair
                     store_data(user_question, response_text)
                 
                 # Debugging: Print the response text before sending it
