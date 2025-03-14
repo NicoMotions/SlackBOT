@@ -53,7 +53,7 @@ def generate_ai_response(prompt):
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are a helpful assistant."},
-              {"role": "user", "content": prompt}]
+                  {"role": "user", "content": prompt}]
     )
     return response["choices"][0]["message"]["content"].strip()
 
@@ -62,38 +62,31 @@ def generate_ai_response(prompt):
 def slack_events():
     data = request.json
     
-    # Debugging: Print the received data
-    print("Received data:", data)
-    
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]})
     
     if "event" in data:
         event = data["event"]
         
-        # Debugging: Print the event data
-        print("Event data:", event)
-        
+        # Ensure bot responds only when tagged
         if event.get("type") == "message" and "bot_id" not in event:
             user_question = event.get("text", "").strip()
             channel = event.get("channel")
             
-            # Debugging: Print the user question and channel
-            print(f"User question: {user_question}, Channel: {channel}")
-            
-            stored_answer = get_answer(user_question)
-            if stored_answer:
-                response_text = stored_answer
-            else:
-                response_text = generate_ai_response(user_question)
-            
-            # Debugging: Print the response text before sending it
-            print("Response text:", response_text)
-            
-            try:
-                client.chat_postMessage(channel=channel, text=response_text)
-            except SlackApiError as e:
-                print(f"Error sending message: {e.response['error']}")
+            # Only proceed if bot is tagged (mentions include the bot's name)
+            if f"<@{SLACK_BOT_TOKEN.split('-')[0]}>" in user_question:
+                
+                stored_answer = get_answer(user_question)
+                if stored_answer:
+                    response_text = stored_answer
+                else:
+                    response_text = generate_ai_response(user_question)
+                    store_data(user_question, response_text)
+                
+                try:
+                    client.chat_postMessage(channel=channel, text=response_text)
+                except SlackApiError as e:
+                    print(f"Error sending message: {e.response['error']}")
     
     return jsonify({"status": "ok"})
 
